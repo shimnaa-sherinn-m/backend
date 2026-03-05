@@ -1,6 +1,8 @@
 import DataSchema from './model/model.js'
 import userSchema from  './model/user.js'
 import bcrypt from 'bcrypt'
+import pkg from 'jsonwebtoken'
+const {sign} = pkg
 // export async function AddData(req,res) {
 
     
@@ -14,11 +16,12 @@ import bcrypt from 'bcrypt'
 
 export async function AddData(req,res){
     const {title,price,image}= req.body
+    const userid = req.user.UserID
     if (!(title&&price&&image)) {
         res.status(500).send({msg:"invalid input"})
     }
     else{
-        await DataSchema.create({title,price,image}).then(()=>{
+        await DataSchema.create({title,price,image,userid}).then(()=>{
             res.status(200).send({msg:"success"})
         }).catch((err)=>{
             res.status(500).send({msg:"error"})
@@ -102,10 +105,25 @@ export async function Getuser(req,res){
 }
 
 
-export async function GetSingleuser(req,res){
-    const {id} = req.params
+// export async function GetSingleuser(req,res){
+//     // const {id} = req.params
+//     // const userid = req.user.UserID
+//     // console.log(userid);
+    
+    
 
-await userSchema.findOne({_id:id}).then((data)=>{
+// await userSchema.findOne({_id:req.user.UserID}).then((data)=>{
+   
+//        res.status(200).send(data)
+// }).catch((err)=>{
+// res.status(500).send({Error:err})
+// })    
+// }
+
+export async function GetSingleuser(req,res){
+   const userid = req.user.UserID
+
+await userSchema.findOne({_id:userid}).then((data)=>{
     res.status(200).send(data)
 }).catch((err)=>{
 res.status(500).send({Error:err})
@@ -157,5 +175,8 @@ export async function Login(req,res){
 
     if(success!==true)
         return res.status(500).send({msg:"incorrect password"})
-    res.status(200).send({msg:"login success"})
+
+
+    const token = await sign({UserID:user._id},process.env.JWT_KEY,{expiresIn:'24hr'})
+    res.status(200).send({token})
 }
